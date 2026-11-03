@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="LootHub.Application/LootHub.Application.csproj" />
+  <Project Path="LootHub.Domain/LootHub.Domain.csproj" />
+  <Project Path="LootHub.Infrastructure/LootHub.Infrastructure.csproj" />
+  <Project Path="LootHub.WebApi/LootHub.WebApi.csproj" />
+</Solution>
