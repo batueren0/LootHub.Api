@@ -10,10 +10,10 @@ public sealed class Payment : BaseEntity
     public Money Amount { get; set; } = Money.Zero();
     public PaymentMethod? Method { get; set; }
     public PaymentStatus Status { get; set; }
-    public Order? Order { get; set; }
     public string? ProviderToken { get; set; }
     public string? ProviderPaymentId { get; set; }
     public string? FailureReason { get; set; }
     public DateTimeOffset? PaidAtUtc { get; set; }
+    public Order? Order { get; set; }
 
 }
