@@ -12,15 +12,12 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Scalar.AspNetCore" Version="2.19.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\LootHub.Application\LootHub.Application.csproj" />
     <ProjectReference Include="..\LootHub.Infrastructure\LootHub.Infrastructure.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Controllers\" />
   </ItemGroup>
 
 </Project>
