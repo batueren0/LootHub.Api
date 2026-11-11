@@ -3,8 +3,6 @@ using LootHub.Application.Common;
 using LootHub.Application.Contracts.Services;
 using LootHub.Application.DTOs.Category;
 using LootHub.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
-using System.Xml;
 
 namespace LootHub.Application.Features;
 

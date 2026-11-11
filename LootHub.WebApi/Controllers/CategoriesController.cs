@@ -37,7 +37,7 @@ public class CategoriesController(ICategoryService categoryService) : ApiControl
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id ,[FromBody] UpdateCategoryRequest request, CancellationToken ct)
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCategoryRequest request, CancellationToken ct)
     {
         var result = await categoryService.UpdateAsync(id, request, ct);
 
