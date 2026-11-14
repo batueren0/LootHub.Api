@@ -35,4 +35,34 @@ public class ProductsController(IProductService service) : ApiControllerBase
           : Failure(result.ErrorType, result.ErrorMessage);
     }
 
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProductRequest request, CancellationToken ct)
+    {
+        var result = await service.UpdateAsync(id, request, ct);
+
+        return result.IsSuccess
+           ? NoContent()
+           : Failure(result.ErrorType, result.ErrorMessage);
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        var result = await service.DeleteAsync(id, ct);
+
+        return result.IsSuccess
+            ? NoContent()
+            : Failure(result.ErrorType, result.ErrorMessage);
+    }
+
+    [HttpPatch("{id:guid}/stock")]
+    public async Task<IActionResult> UpdateStock(Guid id, [FromBody] UpdateStockRequest request, CancellationToken ct)
+    {
+        var result = await service.UpdateStockAsync(id, request, ct);
+
+        return result.IsSuccess
+            ? NoContent()
+            : Failure(result.ErrorType, result.ErrorMessage);
+    }
+
 }

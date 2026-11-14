@@ -41,3 +41,8 @@ GET {{host}}/api/brands
 
 ###
 GET {{host}}/api/properties
+
+### Stok azalt
+PATCH {{host}}/api/products/BURAYA-ID/stock
+Content-Type: application/json
+{"action": "Decrease", "quantity": 3}
