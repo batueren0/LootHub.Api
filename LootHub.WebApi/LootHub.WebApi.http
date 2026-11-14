@@ -1,6 +1,43 @@
-@LootHub.WebApi_HostAddress = http://localhost:5121
+﻿@host = https://localhost:7149
 
-GET {{LootHub.WebApi_HostAddress}}/weatherforecast/
-Accept: application/json
+### 1) Tüm ürünler (en yeniden eskiye)
+GET {{host}}/api/products
+
+### 2) Arama: adında "razer" geçenler
+GET {{host}}/api/products?search=razer
+
+### 3) En fazla 2000 TL
+GET {{host}}/api/products?maxPrice=2000
+
+### 4) 1000 - 5000 TL arası, ucuzdan pahalıya
+GET {{host}}/api/products?minPrice=1000&maxPrice=5000&sort=PriceAsc
+
+### 5) Pahalıdan ucuza
+GET {{host}}/api/products?sort=PriceDesc
+
+### 6) Sadece stokta olanlar (stoğu 0 olan 3 ürün gelmemeli)
+GET {{host}}/api/products?inStockOnly=true
+
+### 7) Sayfalama: sayfa başı 5, 2. sayfa
+GET {{host}}/api/products?pageSize=5&page=2
+
+### 8) Hatalı sayfa değerleri -> page 1, pageSize 48 dönmeli
+GET {{host}}/api/products?page=0&pageSize=5000
+
+### 9) Kategoriye göre (id'yi GET /api/categories cevabından kopyala)
+GET {{host}}/api/products?categoryId=BURAYA-KATEGORI-ID
+
+### 10) Detay (slug ile)
+GET {{host}}/api/products/razer-deathadder-v3-pro
+
+### 11) Olmayan slug -> 404
+GET {{host}}/api/products/olmayan-urun
+
+### 12) Kategoriler / markalar / özellikler
+GET {{host}}/api/categories
 
 ###
+GET {{host}}/api/brands
+
+###
+GET {{host}}/api/properties

@@ -1,5 +1,6 @@
 using LootHub.Application;
 using LootHub.Infrastructure;
+using LootHub.WebApi.Seeding;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,6 +13,9 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+    await DevDataSeeder.SeedAsync(app.Services);
 
 if (app.Environment.IsDevelopment())
 {

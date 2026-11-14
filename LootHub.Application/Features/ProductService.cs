@@ -77,6 +77,38 @@ public class ProductService(IUnitOfWork uow,
     }
 
 
+    public async Task<PagedResult<ProductSummaryResponse>> GetPagedAsync(ProductQuery query, CancellationToken ct = default)
+    {
+        query = query with
+        {
+            Page = Math.Max(query.Page, 1),
+            PageSize = Math.Clamp(query.PageSize, 1, 48)
+        };
+
+        var paged = await uow.Products.GetPagedAsync(query, ct);
+
+        return new PagedResult<ProductSummaryResponse>
+        {
+            Items = paged.Items.Select(ToSummaryResponse).ToList(),
+            Page = paged.Page,
+            PageSize = paged.PageSize,
+            TotalCount = paged.TotalCount
+        };
+    }
+
+
+
+    private static ProductSummaryResponse ToSummaryResponse(Product p) => new(
+        p.Id, p.Name, p.Slug,
+        p.UnitPrice.Amount, p.UnitPrice.Currency,
+        p.ImageUrl,
+        p.Brand!.Name, p.Category!.Name,
+        p.Stock);
+
+
+
+
+
 
     private Task<Product?> GetDetailAsync(Expression<Func<Product, bool>> predicate, CancellationToken ct) => uow.Products.GetAsync(new QueryOptions<Product>
     {
@@ -94,4 +126,6 @@ public class ProductService(IUnitOfWork uow,
         p.Brand!.Name, p.Category!.Name,
         p.Stock,
         p.ProductProperties.Select(pp => new ProductPropertyResponse(pp.Property!.Name, pp.Value)).ToList());
+
+
 }

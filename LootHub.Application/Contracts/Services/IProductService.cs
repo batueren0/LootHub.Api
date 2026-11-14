@@ -7,4 +7,5 @@ public interface IProductService
 {
     Task<Result<ProductDetailResponse>> CreateAsync(CreateProductRequest request, CancellationToken ct = default);
     Task<Result<ProductDetailResponse>> GetBySlugAsync(string slug, CancellationToken ct = default);
+    Task<PagedResult<ProductSummaryResponse>> GetPagedAsync(ProductQuery query, CancellationToken ct = default);
 }

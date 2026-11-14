@@ -7,6 +7,13 @@ namespace LootHub.WebApi.Controllers;
 [Route("api/products")]
 public class ProductsController(IProductService service) : ApiControllerBase
 {
+    [HttpGet]
+    public async Task<IActionResult> GetPaged([FromQuery] ProductQuery query, CancellationToken ct)
+    {
+        var result = await service.GetPagedAsync(query, ct);
+        return Ok(result);
+    }
+
 
     [HttpGet("{slug}")]
     public async Task<IActionResult> GetBySlug(string slug, CancellationToken ct)
