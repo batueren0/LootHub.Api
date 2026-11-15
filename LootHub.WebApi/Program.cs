@@ -15,6 +15,9 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 
 var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()!;
+if (string.IsNullOrEmpty(jwtOptions.SecretKey))
+    throw new InvalidOperationException("Jwt:SecretKey is missing. Add it to User Secrets.");
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

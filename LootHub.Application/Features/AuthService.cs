@@ -38,17 +38,18 @@ public class AuthService(
         if (!validationResult.IsValid)
             return Result<AuthResponse>.Failure(ErrorType.Validation, string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage)));
 
-        var userWithEmail = await userManager.FindByEmailAsync(request.Email);
+        var email = request.Email.Trim();
+        var userWithEmail = await userManager.FindByEmailAsync(email);
         if (userWithEmail is not null)
             return Result<AuthResponse>.Failure(ErrorType.Conflict, "An account with this email already exists.");
 
         var user = new AppUser
         {
-            FirstName = request.FirstName,
-            LastName = request.LastName,
+            FirstName = request.FirstName.Trim(),
+            LastName = request.LastName.Trim(),
             PhoneNumber = request.PhoneNumber,
-            UserName = request.Email,
-            Email = request.Email,
+            UserName = email,
+            Email = email
         };
 
         var createResult = await userManager.CreateAsync(user, request.Password);
@@ -61,5 +62,5 @@ public class AuthService(
     }
 
     private static AuthResponse ToResponse(AppUser user, AccessToken token, IList<string> roles) =>
-    new(token.Token, token.ExpiresAt, user.Id, user.Email!, user.FirstName, user.LastName, roles.ToList());
+    new(token.Token, token.ExpiresAt, user.Id, user.Email!.Trim(), user.FirstName, user.LastName, roles.ToList());
 }
