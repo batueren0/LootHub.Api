@@ -1,6 +1,7 @@
 ﻿using LootHub.Application.Common;
 using LootHub.Application.Contracts.Services;
 using LootHub.Application.DTOs.Category;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LootHub.WebApi.Controllers;
@@ -27,6 +28,7 @@ public class CategoriesController(ICategoryService categoryService) : ApiControl
     }
 
     [HttpPost]
+    [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> Create([FromBody] CreateCategoryRequest request, CancellationToken ct)
     {
         var result = await categoryService.CreateAsync(request, ct);
@@ -37,6 +39,7 @@ public class CategoriesController(ICategoryService categoryService) : ApiControl
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCategoryRequest request, CancellationToken ct)
     {
         var result = await categoryService.UpdateAsync(id, request, ct);
@@ -47,6 +50,7 @@ public class CategoriesController(ICategoryService categoryService) : ApiControl
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
         var result = await categoryService.DeleteAsync(id, ct);

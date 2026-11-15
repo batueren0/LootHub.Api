@@ -1,5 +1,7 @@
-﻿using LootHub.Application.Contracts.Services;
+﻿using LootHub.Application.Common;
+using LootHub.Application.Contracts.Services;
 using LootHub.Application.DTOs.Property;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LootHub.WebApi.Controllers;
@@ -26,6 +28,7 @@ public class PropertiesController(IPropertyService service) : ApiControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> Create([FromBody] CreatePropertyRequest request, CancellationToken ct)
     {
         var result = await service.CreateAsync(request, ct);
@@ -36,6 +39,7 @@ public class PropertiesController(IPropertyService service) : ApiControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdatePropertyRequest request, CancellationToken ct)
     {
         var result = await service.UpdateAsync(id, request, ct);
@@ -46,6 +50,7 @@ public class PropertiesController(IPropertyService service) : ApiControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
         var result = await service.DeleteAsync(id, ct);

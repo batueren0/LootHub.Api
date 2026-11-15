@@ -1,5 +1,7 @@
-﻿using LootHub.Application.Contracts.Services;
+﻿using LootHub.Application.Common;
+using LootHub.Application.Contracts.Services;
 using LootHub.Application.DTOs.Products;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LootHub.WebApi.Controllers;
@@ -26,6 +28,7 @@ public class ProductsController(IProductService service) : ApiControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> Create([FromBody] CreateProductRequest request, CancellationToken ct)
     {
         var result = await service.CreateAsync(request, ct);
@@ -36,6 +39,7 @@ public class ProductsController(IProductService service) : ApiControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProductRequest request, CancellationToken ct)
     {
         var result = await service.UpdateAsync(id, request, ct);
@@ -46,6 +50,7 @@ public class ProductsController(IProductService service) : ApiControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
         var result = await service.DeleteAsync(id, ct);
@@ -56,6 +61,7 @@ public class ProductsController(IProductService service) : ApiControllerBase
     }
 
     [HttpPatch("{id:guid}/stock")]
+    [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> UpdateStock(Guid id, [FromBody] UpdateStockRequest request, CancellationToken ct)
     {
         var result = await service.UpdateStockAsync(id, request, ct);
