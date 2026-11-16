@@ -13,7 +13,6 @@ public static class IdentitySeeder
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<AppRole>>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
 
-
         var adminEmail = configuration["Seed:AdminEmail"]
             ?? throw new InvalidOperationException("Seed:AdminEmail is missing.");
         var adminPassword = configuration["Seed:AdminPassword"]

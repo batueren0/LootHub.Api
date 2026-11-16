@@ -34,22 +34,28 @@ public class AuthService(
 
     public async Task<Result<AuthResponse>> RegisterAsync(RegisterRequest request, CancellationToken ct)
     {
+
+        request = request with
+        {
+            Email = request.Email.Trim(),
+            FirstName = request.FirstName.Trim(),
+            LastName = request.LastName.Trim()
+        };
         var validationResult = await registerValidator.ValidateAsync(request, ct);
         if (!validationResult.IsValid)
             return Result<AuthResponse>.Failure(ErrorType.Validation, string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage)));
 
-        var email = request.Email.Trim();
-        var userWithEmail = await userManager.FindByEmailAsync(email);
+        var userWithEmail = await userManager.FindByEmailAsync(request.Email);
         if (userWithEmail is not null)
             return Result<AuthResponse>.Failure(ErrorType.Conflict, "An account with this email already exists.");
 
         var user = new AppUser
         {
-            FirstName = request.FirstName.Trim(),
-            LastName = request.LastName.Trim(),
+            FirstName = request.FirstName,
+            LastName = request.LastName,
             PhoneNumber = request.PhoneNumber,
-            UserName = email,
-            Email = email
+            UserName = request.Email,
+            Email = request.Email
         };
 
         var createResult = await userManager.CreateAsync(user, request.Password);
