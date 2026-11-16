@@ -7,12 +7,12 @@ using Microsoft.AspNetCore.Mvc;
 namespace LootHub.WebApi.Controllers;
 
 [Route("api/categories")]
-public class CategoriesController(ICategoryService categoryService) : ApiControllerBase
+public class CategoriesController(ICategoryService service) : ApiControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
-        var categories = await categoryService.GetAllAsync(ct);
+        var categories = await service.GetAllAsync(ct);
 
         return Ok(categories);
     }
@@ -20,7 +20,7 @@ public class CategoriesController(ICategoryService categoryService) : ApiControl
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
-        var result = await categoryService.GetByIdAsync(id, ct);
+        var result = await service.GetByIdAsync(id, ct);
 
         return result.IsSuccess
             ? Ok(result.Data)
@@ -31,7 +31,7 @@ public class CategoriesController(ICategoryService categoryService) : ApiControl
     [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> Create([FromBody] CreateCategoryRequest request, CancellationToken ct)
     {
-        var result = await categoryService.CreateAsync(request, ct);
+        var result = await service.CreateAsync(request, ct);
 
         return result.IsSuccess
            ? CreatedAtAction(nameof(GetById), new { id = result.Data!.Id }, result.Data)
@@ -42,7 +42,7 @@ public class CategoriesController(ICategoryService categoryService) : ApiControl
     [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCategoryRequest request, CancellationToken ct)
     {
-        var result = await categoryService.UpdateAsync(id, request, ct);
+        var result = await service.UpdateAsync(id, request, ct);
 
         return result.IsSuccess
             ? NoContent()
@@ -53,7 +53,7 @@ public class CategoriesController(ICategoryService categoryService) : ApiControl
     [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        var result = await categoryService.DeleteAsync(id, ct);
+        var result = await service.DeleteAsync(id, ct);
 
         return result.IsSuccess
             ? NoContent()

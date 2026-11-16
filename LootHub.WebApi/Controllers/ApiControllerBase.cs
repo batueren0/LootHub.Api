@@ -20,4 +20,17 @@ public abstract class ApiControllerBase : ControllerBase
 
         return Problem(statusCode: statusCode, detail: message);
     }
+
+    protected Guid CurrentUserId
+    {
+        get
+        {
+            var sub = User.FindFirst("sub")?.Value;
+
+            if (!Guid.TryParse(sub, out var userId))
+                throw new InvalidOperationException("The 'sub' claim is missing or invalid. Is [Authorize] missing on this endpoint?");
+
+            return userId;
+        }
+    }
 }

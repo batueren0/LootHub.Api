@@ -5,12 +5,12 @@ using Microsoft.AspNetCore.Mvc;
 namespace LootHub.WebApi.Controllers;
 
 [Route("api/auth")]
-public class AuthController(IAuthService authService) : ApiControllerBase
+public class AuthController(IAuthService service) : ApiControllerBase
 {
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken ct)
     {
-        var result = await authService.RegisterAsync(request, ct);
+        var result = await service.RegisterAsync(request, ct);
 
         return result.IsSuccess
             ? Ok(result.Data)
@@ -20,7 +20,7 @@ public class AuthController(IAuthService authService) : ApiControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken ct)
     {
-        var result = await authService.LoginAsync(request, ct);
+        var result = await service.LoginAsync(request, ct);
 
         return result.IsSuccess
             ? Ok(result.Data)
