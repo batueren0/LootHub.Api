@@ -17,6 +17,7 @@ public static class ServiceRegistration
         services.AddScoped<IProductService, ProductService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IAddressService, AddressService>();
+        services.AddScoped<IOrderService, OrderService>();
 
         return services;
     }
