@@ -47,4 +47,14 @@ public class OrdersController(IOrderService service) : ApiControllerBase
            ? Ok(result.Data)
            : Failure(result.ErrorType, result.ErrorMessage);
     }
+
+    [HttpPost("{orderNumber}/payments/verify")]
+    public async Task<IActionResult> VerifyPayment(string orderNumber, [FromBody] VerifyPaymentRequest request, CancellationToken ct)
+    {
+        var result = await service.VerifyPaymentAsync(CurrentUserId, orderNumber, request.Token, ct);
+
+        return result.IsSuccess
+           ? Ok(result.Data)
+           : Failure(result.ErrorType, result.ErrorMessage);
+    }
 }

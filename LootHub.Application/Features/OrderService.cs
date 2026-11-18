@@ -108,7 +108,6 @@ public class OrderService(IUnitOfWork uow,
         return orders.Select(ToSummaryResponse).ToList();
     }
 
-
     public async Task<Result<StartPaymentResponse>> StartPaymentAsync(Guid userId, string orderNumber, CancellationToken ct = default)
     {
         var order = await uow.Orders.GetAsync(new QueryOptions<Order>
@@ -140,11 +139,78 @@ public class OrderService(IUnitOfWork uow,
         return Result<StartPaymentResponse>.Success(new StartPaymentResponse(result.Token!, result.PaymentPageUrl!));
     }
 
+    public async Task<Result<OrderDetailResponse>> VerifyPaymentAsync(Guid userId, string orderNumber, string token, CancellationToken ct = default)
+    {
+        var payment = await uow.Payments.GetAsync(new QueryOptions<Payment>
+        {
+            Predicate = p => p.ProviderToken == token
+                && p.Order!.UserId == userId
+                && p.Order.OrderNumber == orderNumber,
+            Include = q => q.Include(p => p.Order).ThenInclude(o => o!.Items),
+            IsTracking = true
+        }, ct);
+        if (payment is null)
+            return Result<OrderDetailResponse>.Failure(ErrorType.NotFound, "Payment not found.");
 
+        var order = payment.Order!;
 
+        if (payment.Status != PaymentStatus.Pending)
+            return Result<OrderDetailResponse>.Failure(ErrorType.Conflict, "This payment has already been processed.");
+
+        var result = await paymentGateway.VerifyAsync(token, ct);
+        if (!result.IsSuccess)
+        {
+            payment.Status = PaymentStatus.Failed;
+            payment.FailureReason = result.FailureReason;
+            await uow.SaveChangesAsync(ct);
+            return Result<OrderDetailResponse>.Failure(ErrorType.PaymentRequired, result.FailureReason ?? "Payment failed.");
+        }
+
+        var productsIds = order.Items.Select(i => i.ProductId).ToList();
+        var products = await uow.Products.GetListAsync(new QueryOptions<Product>
+        {
+            Predicate = p => productsIds.Contains(p.Id),
+            IsTracking = true
+        }, ct);
+        if (products.Count() != productsIds.Count)
+            return await RefundAsync(payment, "One or more products were not found.", ct);
+            
+
+        var productsById = products.ToDictionary(p => p.Id);
+
+        foreach (var item in order.Items)
+        {
+            var product = productsById[item.ProductId];
+
+            if (product.Stock < item.Quantity)
+                return await RefundAsync(payment, "Out of stock, payment refunded.", ct);
+        }
+
+        foreach (var item in order.Items)
+        {
+            var product = productsById[item.ProductId];
+
+            product.Stock -= item.Quantity;
+        }
+
+        payment.Status = PaymentStatus.Completed;
+        payment.ProviderPaymentId = result.ProviderPaymentId;
+        payment.PaidAtUtc = DateTimeOffset.UtcNow;
+        order.Status = OrderStatus.Paid;
+
+        try
+        {
+            await uow.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            return Result<OrderDetailResponse>.Failure(ErrorType.Conflict, "Stock changed during payment. Please try again.");
+        }
+        return Result<OrderDetailResponse>.Success(ToDetailResponse(order));
+
+    }
 
     private static string GenerateOrderNumber() => $"LH-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}";
-
     private static OrderDetailResponse ToDetailResponse(Order order) => new(
     order.Id,
     order.OrderNumber,
@@ -157,8 +223,6 @@ public class OrderService(IUnitOfWork uow,
     order.Phone,
     order.Items.Select(i => new OrderItemResponse(
         i.ProductId, i.ProductName, i.UnitPrice.Amount, i.Quantity, i.TotalAmount.Amount)).ToList());
-
-
     private static OrderSummaryResponse ToSummaryResponse(Order order) => new(
         order.Id,
         order.OrderNumber,
@@ -167,6 +231,12 @@ public class OrderService(IUnitOfWork uow,
         order.Status,
         order.Items.Count
         );
-
+    private async Task<Result<OrderDetailResponse>> RefundAsync(Payment payment, string reason, CancellationToken ct)
+    {
+        payment.Status = PaymentStatus.Refunded;
+        payment.FailureReason = reason;
+        await uow.SaveChangesAsync(ct);
+        return Result<OrderDetailResponse>.Failure(ErrorType.Conflict, reason);
+    }
 
 }

@@ -14,6 +14,7 @@ public abstract class ApiControllerBase : ControllerBase
             ErrorType.NotFound => StatusCodes.Status404NotFound,
             ErrorType.Conflict => StatusCodes.Status409Conflict,
             ErrorType.Unauthorized => StatusCodes.Status401Unauthorized,
+            ErrorType.PaymentRequired => StatusCodes.Status402PaymentRequired,
             _ => StatusCodes.Status500InternalServerError,
 
         };

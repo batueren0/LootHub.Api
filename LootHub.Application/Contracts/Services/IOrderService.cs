@@ -9,4 +9,5 @@ public interface IOrderService
     Task<IReadOnlyList<OrderSummaryResponse>> GetMyOrdersAsync(Guid userId, CancellationToken ct = default);
     Task<Result<OrderDetailResponse>> GetByOrderNumberAsync(Guid userId, string orderNumber, CancellationToken ct = default);
     Task<Result<StartPaymentResponse>> StartPaymentAsync(Guid userId, string orderNumber, CancellationToken ct = default);
+    Task<Result<OrderDetailResponse>> VerifyPaymentAsync(Guid userId, string orderNumber, string token, CancellationToken ct = default);
 }
