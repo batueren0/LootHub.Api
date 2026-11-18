@@ -57,4 +57,14 @@ public class OrdersController(IOrderService service) : ApiControllerBase
            ? Ok(result.Data)
            : Failure(result.ErrorType, result.ErrorMessage);
     }
+
+    [HttpPost("{orderNumber}/cancel")]
+    public async Task<IActionResult> Cancel(string orderNumber, CancellationToken ct)
+    {
+        var result = await service.CancelAsync(CurrentUserId, orderNumber, ct);
+
+        return result.IsSuccess
+        ? NoContent()
+        : Failure(result.ErrorType, result.ErrorMessage);
+    }
 }

@@ -157,6 +157,9 @@ public class OrderService(IUnitOfWork uow,
         if (payment.Status != PaymentStatus.Pending)
             return Result<OrderDetailResponse>.Failure(ErrorType.Conflict, "This payment has already been processed.");
 
+        if (order.Status != OrderStatus.PendingPayment)
+            return Result<OrderDetailResponse>.Failure(ErrorType.Conflict, "This order can no longer be paid.");
+
         var result = await paymentGateway.VerifyAsync(token, ct);
         if (!result.IsSuccess)
         {
@@ -210,6 +213,26 @@ public class OrderService(IUnitOfWork uow,
 
     }
 
+    public async Task<Result> CancelAsync(Guid userId, string orderNumber, CancellationToken ct = default)
+    {
+        var order = await uow.Orders.GetAsync(new QueryOptions<Order>
+        {
+            Predicate = o => o.UserId == userId && o.OrderNumber == orderNumber,
+            IsTracking = true
+        }, ct);
+        if (order is null)
+            return Result.Failure(ErrorType.NotFound, "Order not found.");
+
+        if (order.Status != OrderStatus.PendingPayment)
+            return Result.Failure(ErrorType.Conflict, "Only orders awaiting payment can be cancelled.");
+
+        order.Status = OrderStatus.Cancelled;
+        await uow.SaveChangesAsync(ct);
+
+        return Result.Success();
+    }
+
+
     private static string GenerateOrderNumber() => $"LH-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}";
     private static OrderDetailResponse ToDetailResponse(Order order) => new(
     order.Id,
@@ -238,5 +261,6 @@ public class OrderService(IUnitOfWork uow,
         await uow.SaveChangesAsync(ct);
         return Result<OrderDetailResponse>.Failure(ErrorType.Conflict, reason);
     }
+
 
 }
