@@ -12,7 +12,8 @@ namespace LootHub.Application.Features;
 
 public class OrderService(IUnitOfWork uow,
     UserManager<AppUser> userManager,
-    IValidator<CreateOrderRequest> createOrderValidator
+    IValidator<CreateOrderRequest> createOrderValidator,
+    IPaymentGateway paymentGateway
     ) : IOrderService
 {
     public async Task<Result<OrderDetailResponse>> CreateAsync(Guid userId, CreateOrderRequest request, CancellationToken ct = default)
@@ -108,6 +109,39 @@ public class OrderService(IUnitOfWork uow,
     }
 
 
+    public async Task<Result<StartPaymentResponse>> StartPaymentAsync(Guid userId, string orderNumber, CancellationToken ct = default)
+    {
+        var order = await uow.Orders.GetAsync(new QueryOptions<Order>
+        {
+            Predicate = q => q.UserId == userId && q.OrderNumber == orderNumber,
+            Include = q => q.Include(o => o.Items)
+        }, ct);
+        if (order is null)
+            return Result<StartPaymentResponse>.Failure(ErrorType.NotFound, "Order not found.");
+
+        if (order.Status != OrderStatus.PendingPayment)
+            return Result<StartPaymentResponse>.Failure(ErrorType.Conflict, "Only orders awaiting payment can be paid");
+
+        var result = await paymentGateway.InitializeAsync(order, ct);
+        if (!result.IsSuccess)
+            return Result<StartPaymentResponse>.Failure(ErrorType.Conflict, result.ErrorMessage ?? "Payment could not be started.");
+
+        var payment = new Payment
+        {
+            OrderId = order.Id,
+            Amount = Money.TRY(order.TotalAmount.Amount),
+            Status = PaymentStatus.Pending,
+            ProviderToken = result.Token
+        };
+
+        await uow.Payments.AddAsync(payment, ct);
+        await uow.SaveChangesAsync(ct);
+
+        return Result<StartPaymentResponse>.Success(new StartPaymentResponse(result.Token!, result.PaymentPageUrl!));
+    }
+
+
+
 
     private static string GenerateOrderNumber() => $"LH-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}";
 
@@ -133,4 +167,6 @@ public class OrderService(IUnitOfWork uow,
         order.Status,
         order.Items.Count
         );
+
+
 }
