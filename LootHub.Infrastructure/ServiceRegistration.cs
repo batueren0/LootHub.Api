@@ -3,6 +3,7 @@ using LootHub.Application.Contracts.Services;
 using LootHub.Domain.Entities;
 using LootHub.Infrastructure.Authentication;
 using LootHub.Infrastructure.Common;
+using LootHub.Infrastructure.Payments;
 using LootHub.Infrastructure.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -31,6 +32,7 @@ public static class ServiceRegistration
 
         services.AddScoped<ITokenService, JwtTokenService>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IPaymentGateway, FakePaymentGateway>();
 
         return services;
     }
