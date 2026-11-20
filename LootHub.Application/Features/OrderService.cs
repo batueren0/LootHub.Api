@@ -2,11 +2,13 @@
 using LootHub.Application.Common;
 using LootHub.Application.Contracts.Services;
 using LootHub.Application.DTOs.Order;
+using LootHub.Application.DTOs.Products;
 using LootHub.Domain.Entities;
 using LootHub.Domain.Enums;
 using LootHub.Domain.ValueObjects;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace LootHub.Application.Features;
 
@@ -232,6 +234,39 @@ public class OrderService(IUnitOfWork uow,
         return Result.Success();
     }
 
+    public async Task<PagedResult<OrderSummaryResponse>> GetPagedForAdminAsync(AdminOrderQuery query, CancellationToken ct = default)
+    {
+        query = query with
+        {
+            Page = Math.Max(query.Page, 1),
+            PageSize = Math.Clamp(query.PageSize, 1, 50)
+        };
+
+        var paged = await uow.Orders.GetPagedAsync(query, ct);
+
+        return new PagedResult<OrderSummaryResponse>
+        {
+            Items = paged.Items.Select(ToSummaryResponse).ToList(),
+            Page = paged.Page,
+            PageSize = paged.PageSize,
+            TotalCount = paged.TotalCount
+        };
+    }
+
+    public async Task<Result<OrderDetailResponse>> GetByOrderNumberForAdminAsync(string orderNumber, CancellationToken ct = default)
+    {
+        var order = await uow.Orders.GetAsync(new QueryOptions<Order>
+        {
+            Predicate = o => o.OrderNumber == orderNumber,
+            Include = q => q.Include(o => o.Items)
+        }, ct);
+        if (order is null)
+            return Result<OrderDetailResponse>.Failure(ErrorType.NotFound, "Order not found.");
+
+        return Result<OrderDetailResponse>.Success(ToDetailResponse(order));
+    }
+
+
 
     private static string GenerateOrderNumber() => $"LH-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}";
     private static OrderDetailResponse ToDetailResponse(Order order) => new(
@@ -249,6 +284,7 @@ public class OrderService(IUnitOfWork uow,
     private static OrderSummaryResponse ToSummaryResponse(Order order) => new(
         order.Id,
         order.OrderNumber,
+        order.CustomerName,
         order.CreatedAtUtc,
         order.TotalAmount.Amount,
         order.Status,
@@ -261,6 +297,5 @@ public class OrderService(IUnitOfWork uow,
         await uow.SaveChangesAsync(ct);
         return Result<OrderDetailResponse>.Failure(ErrorType.Conflict, reason);
     }
-
 
 }

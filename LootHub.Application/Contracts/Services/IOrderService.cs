@@ -11,4 +11,6 @@ public interface IOrderService
     Task<Result<StartPaymentResponse>> StartPaymentAsync(Guid userId, string orderNumber, CancellationToken ct = default);
     Task<Result<OrderDetailResponse>> VerifyPaymentAsync(Guid userId, string orderNumber, string token, CancellationToken ct = default);
     Task<Result> CancelAsync(Guid userId, string orderNumber, CancellationToken ct = default);
+    Task<PagedResult<OrderSummaryResponse>> GetPagedForAdminAsync(AdminOrderQuery query, CancellationToken ct = default);
+    Task<Result<OrderDetailResponse>> GetByOrderNumberForAdminAsync(string orderNumber, CancellationToken ct = default);
 }
