@@ -28,9 +28,13 @@ public class AdminOrdersController(IOrderService service) : ApiControllerBase
     }
 
     [HttpPatch("{orderNumber}/status")]
-    public async Task<IActionResult> UpdateStatus(string orderNumber, CancellationToken ct)
+    public async Task<IActionResult> UpdateStatus(string orderNumber, [FromBody] UpdateOrderStatusRequest request, CancellationToken ct)
     {
-        throw new NotImplementedException();
+        var result = await service.UpdateStatusAsync(orderNumber, request, ct);
+
+        return result.IsSuccess
+           ? NoContent()
+           : Failure(result.ErrorType, result.ErrorMessage);
     }
 
     [HttpPost("{orderNumber}/cancel")]

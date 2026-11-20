@@ -15,6 +15,7 @@ namespace LootHub.Application.Features;
 public class OrderService(IUnitOfWork uow,
     UserManager<AppUser> userManager,
     IValidator<CreateOrderRequest> createOrderValidator,
+    IValidator<UpdateOrderStatusRequest> updateStatusValidator,
     IPaymentGateway paymentGateway
     ) : IOrderService
 {
@@ -266,8 +267,38 @@ public class OrderService(IUnitOfWork uow,
         return Result<OrderDetailResponse>.Success(ToDetailResponse(order));
     }
 
+    public async Task<Result> UpdateStatusAsync(string orderNumber, UpdateOrderStatusRequest request, CancellationToken ct = default)
+    {
+        var validationResult = await updateStatusValidator.ValidateAsync(request, ct);
+        if (!validationResult.IsValid)
+            return Result.Failure(ErrorType.Validation, string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage)));
+
+        var order = await uow.Orders.GetAsync(new QueryOptions<Order>
+        {
+            Predicate = o => o.OrderNumber == orderNumber,
+            IsTracking = true
+        },ct);
+        if (order is null)
+            return Result.Failure(ErrorType.NotFound, "Order not found.");
+
+        if (!CanTransition(order.Status, request.Status))
+            return Result.Failure(ErrorType.Conflict, $"Cannot change status from {order.Status} to {request.Status}.");
+
+        order.Status = request.Status;
+        uow.Orders.Update(order);
+        await uow.SaveChangesAsync(ct);
+
+        return Result.Success();
+    }
 
 
+
+    private static bool CanTransition(OrderStatus from, OrderStatus to) => (from, to) switch
+    {
+        (OrderStatus.Paid, OrderStatus.Shipped) => true,
+        (OrderStatus.Shipped, OrderStatus.Delivered) => true,
+        _ => false
+    };
     private static string GenerateOrderNumber() => $"LH-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}";
     private static OrderDetailResponse ToDetailResponse(Order order) => new(
     order.Id,
@@ -297,5 +328,6 @@ public class OrderService(IUnitOfWork uow,
         await uow.SaveChangesAsync(ct);
         return Result<OrderDetailResponse>.Failure(ErrorType.Conflict, reason);
     }
+
 
 }
