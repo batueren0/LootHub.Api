@@ -16,6 +16,14 @@ public sealed class FakePaymentGateway : IPaymentGateway
         return Task.FromResult(new PaymentInitResult(true, token, pageUrl, null));
     }
 
+    public Task<PaymentRefundResult> RefundAsync(Payment payment, CancellationToken ct = default)
+    {
+        if (string.IsNullOrEmpty(payment.ProviderPaymentId))
+            return Task.FromResult(new PaymentRefundResult(false, "No completed payment to refund."));
+
+        return Task.FromResult(new PaymentRefundResult(true, null));
+    }
+
     public Task<PaymentVerifyResult> VerifyAsync(string token, CancellationToken ct = default)
     {
         if (token.StartsWith("FAIL-"))

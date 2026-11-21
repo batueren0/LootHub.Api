@@ -14,4 +14,6 @@ public interface IOrderService
     Task<PagedResult<OrderSummaryResponse>> GetPagedForAdminAsync(AdminOrderQuery query, CancellationToken ct = default);
     Task<Result<OrderDetailResponse>> GetByOrderNumberForAdminAsync(string orderNumber, CancellationToken ct = default);
     Task<Result> UpdateStatusAsync(string orderNumber, UpdateOrderStatusRequest request, CancellationToken ct = default);
+    Task<Result> CancelByAdminAsync(string orderNumber, CancellationToken ct = default);
+    Task<Result> ReturnAsync(string orderNumber, CancellationToken ct = default);
 }

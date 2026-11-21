@@ -40,6 +40,20 @@ public class AdminOrdersController(IOrderService service) : ApiControllerBase
     [HttpPost("{orderNumber}/cancel")]
     public async Task<IActionResult> Cancel(string orderNumber, CancellationToken ct)
     {
-        throw new NotImplementedException();
+        var result = await service.CancelByAdminAsync(orderNumber, ct);
+
+        return result.IsSuccess
+           ? NoContent()
+           : Failure(result.ErrorType, result.ErrorMessage);
+    }
+
+    [HttpPost("{orderNumber}/return")]
+    public async Task<IActionResult> Return(string orderNumber, CancellationToken ct)
+    {
+        var result = await service.ReturnAsync(orderNumber, ct);
+
+        return result.IsSuccess
+           ? NoContent()
+           : Failure(result.ErrorType, result.ErrorMessage);
     }
 }

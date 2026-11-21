@@ -28,7 +28,7 @@ public class OrderService(IUnitOfWork uow,
         var address = await uow.UserAddresses.GetAsync(new QueryOptions<UserAddress>
         {
             Predicate = a => a.UserId == userId && a.Id == request.AddressId
-        },ct);
+        }, ct);
         if (address is null)
             return Result<OrderDetailResponse>.Failure(ErrorType.NotFound, "Address not found.");
 
@@ -46,7 +46,7 @@ public class OrderService(IUnitOfWork uow,
 
         var productsById = products.ToDictionary(p => p.Id);
 
-        foreach(var item in request.Items)
+        foreach (var item in request.Items)
         {
             var product = productsById[item.ProductId];
 
@@ -83,7 +83,7 @@ public class OrderService(IUnitOfWork uow,
         await uow.SaveChangesAsync(ct);
 
         return Result<OrderDetailResponse>.Success(ToDetailResponse(order));
-        
+
     }
 
     public async Task<Result<OrderDetailResponse>> GetByOrderNumberAsync(Guid userId, string orderNumber, CancellationToken ct = default)
@@ -106,8 +106,8 @@ public class OrderService(IUnitOfWork uow,
             Predicate = o => o.UserId == userId,
             OrderBy = o => o.OrderByDescending(o => o.CreatedAtUtc),
             Include = q => q.Include(o => o.Items)
-        },ct);
-        
+        }, ct);
+
         return orders.Select(ToSummaryResponse).ToList();
     }
 
@@ -180,7 +180,7 @@ public class OrderService(IUnitOfWork uow,
         }, ct);
         if (products.Count() != productsIds.Count)
             return await RefundAsync(payment, "One or more products were not found.", ct);
-            
+
 
         var productsById = products.ToDictionary(p => p.Id);
 
@@ -277,7 +277,7 @@ public class OrderService(IUnitOfWork uow,
         {
             Predicate = o => o.OrderNumber == orderNumber,
             IsTracking = true
-        },ct);
+        }, ct);
         if (order is null)
             return Result.Failure(ErrorType.NotFound, "Order not found.");
 
@@ -291,8 +291,84 @@ public class OrderService(IUnitOfWork uow,
         return Result.Success();
     }
 
+    public async Task<Result> CancelByAdminAsync(string orderNumber, CancellationToken ct = default)
+    {
+        var order = await uow.Orders.GetAsync(new QueryOptions<Order>
+        {
+            Predicate = o => o.OrderNumber == orderNumber,
+            Include = q => q.Include(o => o.Items).Include(o => o.Payments),
+            IsTracking = true
+        },ct);
+        if (order is null)
+            return Result.Failure(ErrorType.NotFound, "Order not found.");
+
+        if(order.Status == OrderStatus.PendingPayment)
+        {
+            order.Status = OrderStatus.Cancelled;
+            await uow.SaveChangesAsync(ct);
+            return Result.Success();
+        }
+        if (order.Status == OrderStatus.Paid)
+            return await RestockAndRefundAsync(order, OrderStatus.Cancelled, "Cancelled by admin.", ct);
 
 
+        return Result.Failure(ErrorType.Conflict, "This order cannot be cancelled.");
+    }
+
+    public async Task<Result> ReturnAsync(string orderNumber, CancellationToken ct = default)
+    {
+        var order = await uow.Orders.GetAsync(new QueryOptions<Order>
+        {
+            Predicate = o => o.OrderNumber == orderNumber,
+            Include = q => q.Include(o => o.Items).Include(o => o.Payments),
+            IsTracking = true
+        }, ct);
+        if (order is null)
+            return Result.Failure(ErrorType.NotFound, "Order not found.");
+
+        if (order.Status != OrderStatus.Delivered)
+            return Result.Failure(ErrorType.Conflict, "Only delivered orders can be returned.");
+
+        return await RestockAndRefundAsync(order, OrderStatus.Returned, "Returned by admin.", ct);
+
+    }
+
+
+    private async Task<Result> RestockAndRefundAsync(Order order, OrderStatus newStatus, string reason, CancellationToken ct)
+    {
+        var payment = order.Payments.FirstOrDefault(p => p.Status == PaymentStatus.Completed);
+        if (payment is null)
+            return Result.Failure(ErrorType.Conflict, "No completed payment found for this order.");
+
+        var refund = await paymentGateway.RefundAsync(payment, ct);
+        if (!refund.IsSuccess)
+            return Result.Failure(ErrorType.Conflict, refund.FailureReason ?? "Refund failed.");
+
+        var productsIds = order.Items.Select(i => i.ProductId).ToList();
+        var products = await uow.Products.GetListAsync(new QueryOptions<Product>
+        {
+            Predicate = p => productsIds.Contains(p.Id),
+            IsTracking = true
+        }, ct);
+
+        var productsById = products.ToDictionary(p => p.Id);
+
+        foreach (var item in order.Items)
+        {
+            if (productsById.TryGetValue(item.ProductId, out var product))
+                product.Stock += item.Quantity;
+        }
+
+        payment.Status = PaymentStatus.Refunded;
+        payment.FailureReason = reason;
+        order.Status = newStatus;
+
+
+        await uow.SaveChangesAsync(ct);
+
+        return Result.Success();
+
+    }
     private static bool CanTransition(OrderStatus from, OrderStatus to) => (from, to) switch
     {
         (OrderStatus.Paid, OrderStatus.Shipped) => true,
