@@ -28,11 +28,15 @@ public static class ServiceRegistration
        .AddEntityFrameworkStores<AppDbContext>();
 
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        services.Configure<IyzicoOptions>(configuration.GetSection(IyzicoOptions.SectionName));
 
 
         services.AddScoped<ITokenService, JwtTokenService>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
-        services.AddScoped<IPaymentGateway, FakePaymentGateway>();
+        if (configuration["Payments:Provider"] == "Iyzico")
+            services.AddScoped<IPaymentGateway, IyzicoPaymentGateway>();
+        else
+            services.AddScoped<IPaymentGateway, FakePaymentGateway>();
 
         return services;
     }
