@@ -34,7 +34,13 @@ public static class ServiceRegistration
         services.AddScoped<ITokenService, JwtTokenService>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         if (configuration["Payments:Provider"] == "Iyzico")
+        {
+            if (string.IsNullOrWhiteSpace(configuration["Iyzico:ApiKey"]) || string.IsNullOrWhiteSpace(configuration["Iyzico:SecretKey"]))
+                throw new InvalidOperationException("Iyzico keys are missing. Add them to User Secrets.");
+
             services.AddScoped<IPaymentGateway, IyzicoPaymentGateway>();
+        }
+            
         else
             services.AddScoped<IPaymentGateway, FakePaymentGateway>();
 
