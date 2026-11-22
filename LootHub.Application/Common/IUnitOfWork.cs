@@ -15,7 +15,6 @@ public interface IUnitOfWork
     IRepository<Property> Properties { get; }
     IRepository<ProductProperty> ProductProperties { get; }
     IRepository<UserAddress> UserAddresses { get; }
-    IRepository<OrderItem> OrderItems { get; }
     IRepository<Payment> Payments { get; }
 
 }

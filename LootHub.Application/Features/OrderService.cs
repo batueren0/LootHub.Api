@@ -2,13 +2,11 @@
 using LootHub.Application.Common;
 using LootHub.Application.Contracts.Services;
 using LootHub.Application.DTOs.Order;
-using LootHub.Application.DTOs.Products;
 using LootHub.Domain.Entities;
 using LootHub.Domain.Enums;
 using LootHub.Domain.ValueObjects;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace LootHub.Application.Features;
 
@@ -179,7 +177,7 @@ public class OrderService(IUnitOfWork uow,
             IsTracking = true
         }, ct);
         if (products.Count() != productsIds.Count)
-            return await RefundAsync(payment, "One or more products were not found.", ct);
+            return await RefundCapturedPaymentAsync(payment, result.ProviderPaymentId, "One or more products are no longer available.", ct);
 
 
         var productsById = products.ToDictionary(p => p.Id);
@@ -189,7 +187,7 @@ public class OrderService(IUnitOfWork uow,
             var product = productsById[item.ProductId];
 
             if (product.Stock < item.Quantity)
-                return await RefundAsync(payment, "Out of stock, payment refunded.", ct);
+                return await RefundCapturedPaymentAsync(payment, result.ProviderPaymentId, "Out of stock.", ct);
         }
 
         foreach (var item in order.Items)
@@ -397,12 +395,23 @@ public class OrderService(IUnitOfWork uow,
         order.Status,
         order.Items.Count
         );
-    private async Task<Result<OrderDetailResponse>> RefundAsync(Payment payment, string reason, CancellationToken ct)
+    private async Task<Result<OrderDetailResponse>> RefundCapturedPaymentAsync(Payment payment, string? providerPaymentId, string reason, CancellationToken ct)
     {
-        payment.Status = PaymentStatus.Refunded;
-        payment.FailureReason = reason;
+        payment.ProviderPaymentId = providerPaymentId;
+
+        var refund = await paymentGateway.RefundAsync(payment, ct);
+        if (refund.IsSuccess)
+        {
+            payment.Status = PaymentStatus.Refunded;
+            payment.FailureReason = reason;
+            await uow.SaveChangesAsync(ct);
+            return Result<OrderDetailResponse>.Failure(ErrorType.Conflict, $"{reason} Your payment has been refunded.");
+        }
+
+        payment.Status = PaymentStatus.Completed;
+        payment.FailureReason = $"{reason} Automatic refund failed: {refund.FailureReason}. Manual refund required.";
         await uow.SaveChangesAsync(ct);
-        return Result<OrderDetailResponse>.Failure(ErrorType.Conflict, reason);
+        return Result<OrderDetailResponse>.Failure(ErrorType.Conflict, $"{reason} Your payment will be refunded manually.");
     }
 
 

@@ -49,10 +49,8 @@ var app = builder.Build();
 await IdentitySeeder.SeedAsync(app.Services, app.Configuration);
 
 if (app.Environment.IsDevelopment())
-    await DevDataSeeder.SeedAsync(app.Services);
-
-if (app.Environment.IsDevelopment())
 {
+    await DevDataSeeder.SeedAsync(app.Services);
     app.MapOpenApi();
     app.MapScalarApiReference();
 }

@@ -16,7 +16,6 @@ public sealed class UnitOfWork(AppDbContext context) : IUnitOfWork
     public IRepository<Property> Properties { get; } = new BaseRepository<Property, AppDbContext>(context);
     public IRepository<ProductProperty> ProductProperties { get; } = new BaseRepository<ProductProperty, AppDbContext>(context);
     public IRepository<UserAddress> UserAddresses { get; } = new BaseRepository<UserAddress, AppDbContext>(context);
-    public IRepository<OrderItem> OrderItems { get; } = new BaseRepository<OrderItem, AppDbContext>(context);
     public IRepository<Payment> Payments { get; } = new BaseRepository<Payment, AppDbContext>(context);
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken) => context.SaveChangesAsync(cancellationToken);

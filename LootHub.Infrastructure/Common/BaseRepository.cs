@@ -18,7 +18,6 @@ public class BaseRepository<TEntity, TContext>(TContext context) : IRepository<T
     }
     public void Update(TEntity entity)
     {
-        entity.LastModifiedAtUtc = TimeProvider.System.GetUtcNow();
         if (context.Entry(entity).State == EntityState.Detached)
             context.Update(entity);
 
@@ -27,7 +26,6 @@ public class BaseRepository<TEntity, TContext>(TContext context) : IRepository<T
     public void Delete(TEntity entity)
     {
         var time = TimeProvider.System.GetUtcNow();
-        entity.LastModifiedAtUtc = time;
         entity.DeletedAtUtc = time;
         entity.IsActive = false;
         if (context.Entry(entity).State == EntityState.Detached)

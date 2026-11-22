@@ -1,4 +1,5 @@
-﻿using LootHub.Domain.Entities;
+﻿using LootHub.Domain.Common;
+using LootHub.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,18 @@ namespace LootHub.Infrastructure.Persistence.Context;
 public class AppDbContext : IdentityDbContext<AppUser, AppRole, Guid>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        var now = TimeProvider.System.GetUtcNow();
+        foreach (var entry in ChangeTracker.Entries<BaseEntity>())
+        {
+            if (entry.State == EntityState.Modified)
+                entry.Entity.LastModifiedAtUtc = now;
+        }
+
+        return base.SaveChangesAsync(cancellationToken);
+    }
 
     public DbSet<Brand> Brands { get; set; }
     public DbSet<Category> Categories { get; set; }

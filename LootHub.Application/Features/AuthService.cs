@@ -16,6 +16,8 @@ public class AuthService(
 {
     public async Task<Result<AuthResponse>> LoginAsync(LoginRequest request, CancellationToken ct)
     {
+        request = request with { Email = request.Email.Trim() };
+
         var validationResult = await loginValidator.ValidateAsync(request,ct);
         if (!validationResult.IsValid)
             return Result<AuthResponse>.Failure(ErrorType.Validation, string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage)));
@@ -68,5 +70,5 @@ public class AuthService(
     }
 
     private static AuthResponse ToResponse(AppUser user, AccessToken token, IList<string> roles) =>
-    new(token.Token, token.ExpiresAt, user.Id, user.Email!.Trim(), user.FirstName, user.LastName, roles.ToList());
+    new(token.Token, token.ExpiresAt, user.Id, user.Email!, user.FirstName, user.LastName, roles.ToList());
 }
